@@ -1,22 +1,4 @@
-import sys
-from datetime import datetime
-from pathlib import Path
 
-
-def create_report(business, website, location):
-
-    reports_dir = Path("reports")
-    reports_dir.mkdir(exist_ok=True)
-
-    safe_name = "".join(
-        c for c in business if c.isalnum() or c in (" ", "_")
-    ).replace(" ", "_")
-
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-    file_path = reports_dir / f"{safe_name}_Report_{timestamp}.txt"
-
-    report = f"""
 ==================================================
 ROGERS HOLDINGS LLC
 LOCAL BUSINESS DIGITAL OPTIMIZATION REPORT
@@ -25,10 +7,10 @@ LOCAL BUSINESS DIGITAL OPTIMIZATION REPORT
 BUSINESS INFORMATION
 --------------------------------------------------
 
-Business Name : {business}
-Website       : {website}
-Location      : {location}
-Generated     : {datetime.now().strftime("%B %d, %Y %I:%M %p")}
+Business Name : Joe's Roofing
+Website       : https://joesroofing.com
+Location      : Mt Sterling, KY
+Generated     : June 09, 2026 08:12 PM
 
 ==================================================
 WEBSITE AUDIT
@@ -79,22 +61,3 @@ to identify digital optimization opportunities
 for local businesses.
 
 ==================================================
-"""
-
-    with open(file_path, "w") as file:
-        file.write(report)
-
-    print("\n✅ Report successfully created:")
-    print(file_path)
-
-
-if len(sys.argv) != 4:
-    print("\nUsage:")
-    print('python3 report.py "Business Name" "Website URL" "City, State"\n')
-    sys.exit(1)
-
-business = sys.argv[1]
-website = sys.argv[2]
-location = sys.argv[3]
-
-create_report(business, website, location)
