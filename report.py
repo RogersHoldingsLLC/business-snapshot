@@ -1,10 +1,14 @@
+import json
 import re
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
+from urllib.parse import urlencode
 
 import requests
 from bs4 import BeautifulSoup
+
+CONFIG_FILE = Path("rogers_os_config.json")
 
 
 def fetch_website(website):
@@ -103,6 +107,85 @@ def opportunity_rating(score):
     return "HIGH OPPORTUNITY"
 
 
+def priority_tier(score):
+    if score < 60:
+        return "High"
+    if score < 75:
+        return "Medium"
+    return "Low"
+
+
+def offer_service(results, score):
+    if results["phone_found"] == "No" or results["contact_language"] == "No":
+        return "Website conversion optimization"
+    if results["title"] == "Not Found" or results["meta_description"] == "Not Found":
+        return "SEO basics cleanup"
+    if results["https"] == "No" or results["reachable"] == "No":
+        return "Technical website cleanup"
+    if score < 75:
+        return "Local digital optimization"
+    return "Conversion and local visibility review"
+
+
+def next_action(score):
+    if score < 60:
+        return "Send audit summary and recommend a website optimization consultation."
+    if score < 75:
+        return "Send audit summary and recommend practical quick-win improvements."
+    return "Send audit summary and offer a conversion and local visibility review."
+
+
+def follow_up_date():
+    return (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d")
+
+
+def load_rogers_os_config():
+    if not CONFIG_FILE.exists():
+        raise FileNotFoundError(f"Missing configuration file: {CONFIG_FILE}")
+
+    with open(CONFIG_FILE) as file:
+        config = json.load(file)
+
+    web_app_url = str(config.get("web_app_url", "")).strip()
+    api_key = str(config.get("api_key", "")).strip()
+
+    if not web_app_url or web_app_url.startswith("PASTE_"):
+        raise ValueError("Rogers Holdings OS Web App URL is not configured.")
+    if not api_key or api_key.startswith("PASTE_"):
+        raise ValueError("Rogers Holdings OS API key is not configured.")
+
+    return web_app_url, api_key
+
+
+def send_to_rogers_os(audit):
+    web_app_url, api_key = load_rogers_os_config()
+    separator = "&" if "?" in web_app_url else "?"
+    url = f"{web_app_url}{separator}{urlencode({'apiKey': api_key})}"
+
+    response = requests.post(url, json=build_rogers_os_payload(audit), timeout=20)
+    response.raise_for_status()
+
+    result = response.json()
+    if not result.get("ok"):
+        raise RuntimeError(result.get("error", "Rogers Holdings OS rejected the audit."))
+
+    return result
+
+
+def build_rogers_os_payload(audit):
+    return {
+        "company": audit["company"],
+        "website": audit["website"],
+        "auditScore": audit["auditScore"],
+        "auditOutcome": audit["auditOutcome"],
+        "priorityTier": audit["priorityTier"],
+        "recommendedService": audit["recommendedService"],
+        "notes": audit["notes"],
+        "followUpDate": audit["followUpDate"],
+        "nextAction": audit["nextAction"],
+    }
+
+
 def generate_recommendations(results):
     recommendations = []
 
@@ -152,7 +235,7 @@ def generate_sales_talking_points(results, score, opportunity):
     return points
 
 
-def create_report(business, website, location):
+def run_audit(business, website, location):
     reports_dir = Path("reports")
     reports_dir.mkdir(exist_ok=True)
 
@@ -164,6 +247,10 @@ def create_report(business, website, location):
     score = calculate_score(website_results)
     rating = score_rating(score)
     opportunity = opportunity_rating(score)
+    tier = priority_tier(score)
+    service = offer_service(website_results, score)
+    action = next_action(score)
+    follow_up = follow_up_date()
 
     recommendations = generate_recommendations(website_results)
     sales_points = generate_sales_talking_points(website_results, score, opportunity)
@@ -248,15 +335,55 @@ trust, and customer conversion.
     with open(file_path, "w") as file:
         file.write(report)
 
+    notes = " ".join(recommendations)
+    summary = (
+        f"{business} scored {score}/100 with an audit outcome of {opportunity}. "
+        f"Recommended service: {service}."
+    )
+
+    return {
+        "company": business,
+        "website": website,
+        "auditScore": score,
+        "auditOutcome": opportunity,
+        "priorityTier": tier,
+        "offerService": service,
+        "recommendedService": service,
+        "notes": notes,
+        "summary": summary,
+        "followUpDate": follow_up,
+        "nextAction": action,
+        "reportPath": str(file_path),
+        "rating": rating,
+    }
+
+
+def create_report(business, website, location):
+    result = run_audit(business, website, location)
+
     print("\n✅ Report successfully created:")
-    print(file_path)
-    print(f"\nWebsite Optimization Score: {score}/100 - {rating}")
-    print(f"Opportunity Rating: {opportunity}")
+    print(result["reportPath"])
+    print(f"\nWebsite Optimization Score: {result['auditScore']}/100 - {result['rating']}")
+    print(f"Opportunity Rating: {result['auditOutcome']}")
+
+    send_choice = input("\nSend to Rogers Holdings OS? [y/N]: ").strip().lower()
+    if send_choice in ("y", "yes"):
+        try:
+            send_to_rogers_os(result)
+            print("Prospect successfully added to Rogers Holdings OS")
+        except Exception as error:
+            print(f"Error sending prospect to Rogers Holdings OS: {error}")
+
+    return result
 
 
-if len(sys.argv) != 4:
-    print('\nUsage: python3 report.py "Business Name" "Website URL" "City, State"\n')
-    sys.exit(1)
+def main():
+    if len(sys.argv) != 4:
+        print('\nUsage: python3 report.py "Business Name" "Website URL" "City, State"\n')
+        sys.exit(1)
+
+    create_report(sys.argv[1], sys.argv[2], sys.argv[3])
 
 
-create_report(sys.argv[1], sys.argv[2], sys.argv[3])
+if __name__ == "__main__":
+    main()

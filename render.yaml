@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: website-audit-tool-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn audit_api:app
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
