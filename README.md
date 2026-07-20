@@ -1,11 +1,12 @@
-# Local Business Report Generator
+# Business Snapshot
 
-Canonical Website Audit Tool project for Rogers Holdings LLC.
+Business Snapshot is Rogers Holdings LLC's customer-facing website assessment product.
+It is powered by the shared Website Audit Tool API.
 
 This project supports:
 
-- CLI report generation
-- customer-facing printable report creation
+- CLI Business Snapshot generation
+- customer-facing printable snapshot creation
 - optional "Send to Rogers Holdings OS" prospect sync
 - local API access for Rogers Holdings OS through `WEBSITE_AUDIT_TOOL_URL`
 
@@ -19,15 +20,15 @@ pip3 install -r requirements.txt
 
 ## CLI Usage
 
-Run the existing printable/customer-facing report workflow:
+Run the printable/customer-facing Business Snapshot workflow:
 
 ```bash
 python3 report.py "Business Name" "https://example.com" "City, State"
 ```
 
-The report is written to `reports/`.
+The Business Snapshot is written to `reports/`.
 
-After report creation, the CLI asks:
+After snapshot creation, the CLI asks:
 
 ```text
 Send to Rogers Holdings OS? [y/N]:
@@ -68,7 +69,7 @@ Prospect successfully added to Rogers Holdings OS
 
 ## Website Audit Tool API
 
-The API exposes the existing `report.py` audit engine so Rogers Holdings OS can call it through `WEBSITE_AUDIT_TOOL_URL`.
+The shared Website Audit Tool API exposes the `report.py` audit engine so Rogers Holdings OS can call it through `WEBSITE_AUDIT_TOOL_URL`.
 
 It does not replace the CLI workflow and does not modify Rogers Holdings OS.
 
@@ -132,11 +133,11 @@ Successful responses use this shape:
   "offerService": "Website conversion optimization",
   "notes": "...",
   "summary": "...",
-  "reportPath": "reports/Test_Company_Report_..."
+  "reportPath": "reports/Test_Company_Business_Snapshot_..."
 }
 ```
 
-The API preserves report creation. Each successful `/audit` request creates a customer-facing report in `reports/`.
+The API preserves Business Snapshot creation. Each successful `/audit` request creates a customer-facing snapshot in `reports/`.
 
 ### Audit Package Request
 
@@ -168,9 +169,9 @@ Successful audit package responses include the normal audit fields plus a `repor
   "offerService": "Website conversion optimization",
   "notes": "...",
   "summary": "...",
-  "reportPath": "reports/Test_Company_Report_...",
+  "reportPath": "reports/Test_Company_Business_Snapshot_...",
   "report": {
-    "fileName": "Test_Company_Report_20260621_120000.txt",
+    "fileName": "Test_Company_Business_Snapshot_20260621_120000.txt",
     "reportText": "FULL CUSTOMER REPORT CONTENT"
   }
 }
@@ -195,7 +196,7 @@ Render is the simplest deployment target for this Flask-style API.
 Commit and push this project to:
 
 ```text
-RogersHoldingsLLC/local-business-report-generator
+RogersHoldingsLLC/business-snapshot
 ```
 
 ### 2. Create Render Web Service
